@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+        id="mobi.predictio.sdk.plugin"
+        version="3.0.1">
+
+  <name>PredictIOPlugin</name>
+
+  <engines>
+    <engine name="cordova" version=">=3.4.0"/>
+  </engines>
+
+  <platform name="ios">
+		<config-file target="config.xml" parent="/*">
+			<feature name="PredictIOPlugin">
+				<param name="ios-package" value="PredictIOPlugin" />
+			</feature>
+		</config-file>
+
+		<header-file src="src/ios/PredictIO.h" />
+    <header-file src="src/ios/PIOTripSegment.h" />
+		<header-file src="src/ios/PredictIOPlugin.h" />
+		<source-file src="src/ios/PredictIOPlugin.m" />
+		<source-file src="src/ios/libPredictIOSDK.a" framework="true" />
+
+		<framework src="CoreTelephony.framework" />
+		<framework src="CoreMotion.framework" />
+		<framework src="CoreLocation.framework" />
+		<framework src="CoreBluetooth.framework" />
+		<framework src="ExternalAccessory.framework" />
+		<framework src="AVFoundation.framework" />
+    <framework src="AdSupport.framework" />
+		<framework src="SystemConfiguration.framework" />
+	</platform>
+	
+	 <platform name="android">
+        <config-file parent="/*" target="res/xml/config.xml">
+            <feature name="PredictIOPlugin">
+                <param name="android-package" value="io.predict.plugin.PredictIOPlugin" />
+                <param name="onload" value="true" />
+            </feature>
+            <feature name="PredictIOApp">
+                <param name="android-package" value="io.predict.plugin.PredictIOApp" />
+            </feature>
+        </config-file>
+
+        <config-file parent="/manifest/application" target="AndroidManifest.xml">
+            <meta-data android:name="io.predict.sdk.API_KEY"
+                android:value="YOUR_API_KEY" />
+            <meta-data android:name="com.google.android.gms.version"
+                android:value="@integer/google_play_services_version" />
+
+            <service android:exported="false"
+                android:name="io.predict.sdk.detection.services.PIOMainService" />
+            <service android:exported="false"
+                android:name="io.predict.sdk.detection.services.PIOUtilService" />
+            <service android:exported="false"
+                android:name="io.predict.sdk.detection.services.PIOLocationService" />
+            <service android:exported="false"
+                android:name="io.predict.sdk.detection.services.PIOComService" />
+
+            <receiver android:name="io.predict.sdk.detection.receivers.PIOReceiver">
+                <intent-filter>
+                    <action android:name="android.intent.action.BOOT_COMPLETED" />
+                    <action android:name="android.intent.action.AIRPLANE_MODE" />
+                    <action android:name="android.location.PROVIDERS_CHANGED" />
+                    <action android:name="android.net.wifi.STATE_CHANGE" />
+                    <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                    <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+                    <action android:name="com.sonymobile.SUPER_STAMINA_SETTING_CHANGED" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                    <data android:scheme="package" />
+                </intent-filter>
+            </receiver>
+        </config-file>
+
+        <config-file parent="/manifest" target="AndroidManifest.xml">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+            <uses-permission
+                android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+        </config-file>
+
+        <source-file src="src/android/PredictIOPlugin.java" target-dir="src/io/predict/plugin/" />
+        <source-file src="src/android/PredictIOUtils.java" target-dir="src/io/predict/plugin/" />
+        <source-file src="src/android/PredictIOApp.java" target-dir="src/io/predict/plugin/" />
+        <source-file src="src/android/predict-io-3.0.1.jar" target-dir="libs" />
+
+        <framework src="com.google.android.gms:play-services-location:9.2.1" />
+        <framework src="com.google.android.gms:play-services-base:9.2.1" />
+    </platform>
+</plugin>
