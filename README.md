@@ -12,7 +12,7 @@ Detects that user just started their journey.
 Distinguish car and non-car trips.
 
 #### Use Cases
-Look through the [Use Cases](https://github.com/parktag/PredictIO-Cordova/wiki/Use-Cases) where this SDK can be used.
+Look through the [Use Cases](https://github.com/predict-io/PredictIO-Cordova/wiki/Use-Cases) where this SDK can be used.
 
 ## Requirements
 #### iOS
@@ -27,20 +27,20 @@ Look through the [Use Cases](https://github.com/parktag/PredictIO-Cordova/wiki/U
 
 ## Installation
 #### iOS Integration Guide
-To add predict.io iOS Plugin to your project, check the [predict.io cordova iOS Integration Guide](https://github.com/parktag/PredictIO-Cordova/wiki/Integrating-predict.io-Cordova-iOS-Plugin) for more details.
+To add predict.io iOS Plugin to your project, check the [predict.io cordova iOS Integration Guide](https://github.com/predict-io/PredictIO-Cordova/wiki/Integrating-predict.io-Cordova-iOS-Plugin) for more details.
 
 #### Android Integration Guide
-To add predict.io Android Plugin to your project, check the [predict.io cordova Android Integration Guide](https://github.com/parktag/PredictIO-Cordova/wiki/Integrating-predict.io-Cordova-Android-Plugin) for more details.
+To add predict.io Android Plugin to your project, check the [predict.io cordova Android Integration Guide](https://github.com/predict-io/PredictIO-Cordova/wiki/Integrating-predict.io-Cordova-Android-Plugin) for more details.
 
 ## API Documentation
 #### iOS API Documentation
-For a complete reference of the API for iOS, please check out our [API documentation and usage guide iOS](https://github.com/parktag/PredictIO-Cordova/wiki/API-Documentation-&-Usage-Guide-iOS).
+For a complete reference of the API for iOS, please check out our [API documentation and usage guide iOS](https://github.com/predict-io/PredictIO-Cordova/wiki/API-Documentation-&-Usage-Guide-iOS).
 
 #### Android API Documentation
-For a complete reference of the API for Android, please check out our [API documentation and usage guide Android](https://github.com/parktag/PredictIO-Cordova/wiki/API-Documentation-&-Usage-Guide-Android).
+For a complete reference of the API for Android, please check out our [API documentation and usage guide Android](https://github.com/predict-io/PredictIO-Cordova/wiki/API-Documentation-&-Usage-Guide-Android).
 
 ## FAQ
-Look through the [FAQ](https://github.com/parktag/PredictIO-Cordova/wiki/FAQs) for answers to the most commonly-asked questions about predict.io.
+Look through the [FAQ](https://github.com/predict-io/PredictIO-Cordova/wiki/FAQs) for answers to the most commonly-asked questions about predict.io.
 
 ## Communication
 If you need help, visit our [Help Center] (https://support.predict.io)
