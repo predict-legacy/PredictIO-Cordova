@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
-        id="mobi.predictio.sdk.plugin"
+        id="cordova-plugin-predict-io"
         version="3.0.1">
 
   <name>PredictIOPlugin</name>
@@ -31,7 +31,7 @@
     <framework src="AdSupport.framework" />
 		<framework src="SystemConfiguration.framework" />
 	</platform>
-	
+
 	 <platform name="android">
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="PredictIOPlugin">
