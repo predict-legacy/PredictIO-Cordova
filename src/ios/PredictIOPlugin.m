@@ -123,10 +123,23 @@
 /* This method is invoked when predict.io is unable to validate the last departure event.
  * This can be due to invalid data received from sensors or the trip amplitude.
  * i.e. If the trip takes less than 5 minutes or the distance travelled is less than 3km
+ * @param departureLocation: The Location from where the user departed
+ * @param departureTime: Start time of the trip
+ * @param transportMode: Mode of transport
+ * @param UUID: Trip segment UUID
  */
-- (void)departureCanceled
+- (void)departureCanceled:(PIOTripSegment *)tripSegment
 {
-    [self evaluateJSMethod:@"departureCanceled" params:nil];
+    NSMutableDictionary *departureCanceledData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                                  @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
+                                                  @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
+                                                  @([tripSegment.departureTime timeIntervalSince1970]), @"departureTime",
+                                                  [self transportMode:tripSegment.transportationMode], @"transportationMode",
+                                                  tripSegment.UUID, @"UUID",
+                                                  nil];
+
+    NSString *params = [self jsonSerializeDictionary:departureCanceledData];
+    [self evaluateJSMethod:@"departureCanceled" params:params];
 }
 
 /* This method is invoked when predict.io detects transportation mode
