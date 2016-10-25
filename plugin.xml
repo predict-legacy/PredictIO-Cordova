@@ -55,6 +55,8 @@
                 android:name="io.predict.sdk.detection.services.PIOLocationService" />
             <service android:exported="false"
                 android:name="io.predict.sdk.detection.services.PIOComService" />
+            <service android:exported="false" 
+                android:name="io.predict.plugin.PredictIOForegroundService" />
 
             <receiver android:name="io.predict.sdk.detection.receivers.PIOReceiver">
                 <intent-filter>

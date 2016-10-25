@@ -1,8 +1,10 @@
 package io.predict.plugin;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
 
@@ -28,18 +30,17 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     private static final int LOCATION_CODE = 1;
     private CallbackContext mCallbackContext;
     private JSONArray mData;
+    private boolean isStartForegroundService;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         //ParkTAG SDK code
         PredictIO predictIO = PredictIO.getInstance(getApplicationContext());
-        if (predictIO.getListener() == null) {
             // This notifies sdk that app is initialised
             predictIO.setAppOnCreate((Application) getApplicationContext());
             // set this to get event callbacks
             predictIO.setListener(this);
-        }
     }
 
     @Override
@@ -57,6 +58,9 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             return true;
         } else if ("stop".equals(action)) {
             stopTracker(callbackContext);
+            return true;
+        } else if ("minimize".equals(action)) {
+            minimize();
             return true;
         } else if ("setListener".equals(action)) {
             predictIO.setListener(this);
@@ -100,6 +104,13 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
         }
     }
 
+    private void minimize() {
+        Activity activity = cordova.getActivity();
+        if (activity != null) {
+            activity.moveTaskToBack(true);
+        }
+    }
+
     private void startTracker(JSONArray params, final CallbackContext callbackContext) {
         PrecisionMode precisionMode = PrecisionMode.HIGH;
         boolean isSearchingInPerimeterEnaled = false;
@@ -107,6 +118,7 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             try {
                 precisionMode = params.optBoolean(0, true) ? PrecisionMode.HIGH : PrecisionMode.LOW;
                 isSearchingInPerimeterEnaled = params.optBoolean(1, false);
+                isStartForegroundService = params.optBoolean(2, false);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -116,27 +128,15 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             predictIO.setPrecision(precisionMode);
             predictIO.enableSearchingInPerimeter(isSearchingInPerimeterEnaled);
 
-            //Validate tracker not already running
-            if (predictIO.getStatus() == PredictIOStatus.ACTIVE) {
-                callbackContext.success();
-                return;
-            }
-
-            //Validate google play services
-            final GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-            int resultCode = apiAvailability.isGooglePlayServicesAvailable(getApplicationContext());
-            if (resultCode != ConnectionResult.SUCCESS) {
-                if (apiAvailability.isUserResolvableError(resultCode)) {
-                    apiAvailability.getErrorDialog(this.cordova.getActivity(), resultCode, 1000).show();
-                }
-                callbackContext.success();
-                return;
-            }
+            if (predictIOValidation(callbackContext, predictIO)) return;
 
             //noinspection MissingPermission
             predictIO.start(new PredictIO.PIOActivationListener() {
                 @Override
                 public void onActivated() {
+                    if (isStartForegroundService) {
+                        startService();
+                    }
                     callbackContext.success();
                 }
 
@@ -144,10 +144,10 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
                 public void onActivationFailed(int error) {
                     switch (error) {
                         case 401:
-							callbackContext.error("Please verify your API_KEY!");
+                            callbackContext.error("Please verify your API_KEY!");
                             break;
                         case 403:
-							callbackContext.error("Please grant all required permissions");
+                            callbackContext.error("Please grant all required permissions");
                             break;
                     }
                 }
@@ -158,8 +158,37 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
         }
     }
 
+    private boolean predictIOValidation(CallbackContext callbackContext, PredictIO predictIO) {
+        //Validate tracker not already running
+        if (predictIO.getStatus() == PredictIOStatus.ACTIVE) {
+            callbackContext.success();
+            return true;
+        }
+
+        //Validate google play services
+        final GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(getApplicationContext());
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+                apiAvailability.getErrorDialog(this.cordova.getActivity(), resultCode, 1000).show();
+            }
+            callbackContext.success();
+            return true;
+        }
+        return false;
+    }
+
+    private void startService() {
+        getApplicationContext().startService(new Intent(getApplicationContext(), PredictIOForegroundService.class));
+    }
+
+    private void stopService() {
+        getApplicationContext().stopService(new Intent(getApplicationContext(), PredictIOForegroundService.class));
+    }
+
     private void stopTracker(CallbackContext callbackContext) {
         try {
+            stopService();
             PredictIO.getInstance(getApplicationContext()).stop();
             callbackContext.success();
         } catch (Exception e) {
