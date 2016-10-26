@@ -37,10 +37,10 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
         super.initialize(cordova, webView);
         //ParkTAG SDK code
         PredictIO predictIO = PredictIO.getInstance(getApplicationContext());
-            // This notifies sdk that app is initialised
-            predictIO.setAppOnCreate((Application) getApplicationContext());
-            // set this to get event callbacks
-            predictIO.setListener(this);
+        // This notifies sdk that app is initialised
+        predictIO.setAppOnCreate((Application) getApplicationContext());
+        // set this to get event callbacks
+        predictIO.setListener(this);
     }
 
     @Override
@@ -210,7 +210,7 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     @Override
     public void searchingInPerimeter(Location location) {
         if (location != null) {
-            evaluateJavascript("searchingInPerimeter('" + location.toString() + "')");
+            evaluateJavascript("searchingInPerimeter('" + getJsonParams(location) + "')");
         }
     }
 
@@ -240,7 +240,7 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     @Override
     public void didUpdateLocation(Location location) {
         if (location != null) {
-            evaluateJavascript("didUpdateLocation('" + location.toString() + "')");
+            evaluateJavascript("didUpdateLocation('" + getJsonParams(location) + "')");
         }
     }
 
@@ -253,8 +253,21 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     @Override
     public void detectLargeDistanceTravel(Location location) {
         if (location != null) {
-            evaluateJavascript("detectLargeDistanceTravel('" + location.toString() + "')");
+            evaluateJavascript("detectLargeDistanceTravel('" + getJsonParams(location) + "')");
         }
+    }
+
+    private String getJsonParams(Location location) {
+        JSONObject jsonParam = new JSONObject();
+        try {
+            if (location != null) {
+                jsonParam.put("latitude", location.getLatitude());
+                jsonParam.put("longitude", location.getLongitude());
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonParam.toString();
     }
 
     private String getJsonParams(PIOTripSegment tripSegment) {
