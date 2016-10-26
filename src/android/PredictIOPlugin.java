@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
+import android.text.TextUtils;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -20,7 +21,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.predict.PIOTripSegment;
-import io.predict.PrecisionMode;
 import io.predict.PredictIO;
 import io.predict.PredictIOListener;
 import io.predict.PredictIOStatus;
@@ -91,16 +91,45 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             boolean isSearchParkingEnable = predictIO.isSearchingInPerimeterEnabled();
             callbackContext.success(String.valueOf(isSearchParkingEnable));
             return true;
-        } else if ("precision".equals(action)) {
-            String precision = predictIO.getPrecision() == PrecisionMode.HIGH ? "HIGH" : "LOW";
-            callbackContext.success(precision);
-            return true;
         } else if ("deviceIdentifier".equals(action)) {
             String deviceIdentifier = predictIO.getDeviceIdentifier();
             callbackContext.success(deviceIdentifier);
             return true;
+        } else if ("setCustomParameter".equals(action)) {
+            setCustomParameter(data, predictIO);
+            return true;
+        } else if ("setWebhookURL".equals(action)) {
+            setWebhookURL(data, predictIO);
+            return true;
         } else {
             return false;
+        }
+    }
+
+    private void setWebhookURL(JSONArray data, PredictIO predictIO) {
+        if (data != null) {
+            try {
+                String value = data.optString(0, null);
+                if (!TextUtils.isEmpty(value)) {
+                    predictIO.setWebhookURL(value);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void setCustomParameter(JSONArray data, PredictIO predictIO) {
+        if (data != null) {
+            try {
+                String key = data.optString(0, null);
+                String value = data.optString(1, null);
+                if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
+                    predictIO.setCustomParameter(key, value);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -112,23 +141,22 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     }
 
     private void startTracker(JSONArray params, final CallbackContext callbackContext) {
-        PrecisionMode precisionMode = PrecisionMode.HIGH;
         boolean isSearchingInPerimeterEnaled = false;
         if (params != null) {
             try {
-                precisionMode = params.optBoolean(0, true) ? PrecisionMode.HIGH : PrecisionMode.LOW;
-                isSearchingInPerimeterEnaled = params.optBoolean(1, false);
-                isStartForegroundService = params.optBoolean(2, false);
+                isSearchingInPerimeterEnaled = params.optBoolean(0, false);
+                isStartForegroundService = params.optBoolean(1, false);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         try {
             PredictIO predictIO = PredictIO.getInstance(getApplicationContext());
-            predictIO.setPrecision(precisionMode);
             predictIO.enableSearchingInPerimeter(isSearchingInPerimeterEnaled);
 
-            if (predictIOValidation(callbackContext, predictIO)) return;
+            if (predictIOValidation(callbackContext, predictIO)) {
+                return;
+            }
 
             //noinspection MissingPermission
             predictIO.start(new PredictIO.PIOActivationListener() {
