@@ -221,14 +221,20 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     }
 
     @Override
+    public void stationary(boolean isStationary) {
+        evaluateJavascript("stationary('" + isStationary + "')");
+    }
+
+    @Override
     public void arrived(PIOTripSegment tripSegment) {
         String param = getJsonParams(tripSegment);
         evaluateJavascript("arrived('" + param + "')");
     }
 
     @Override
-    public void departureCanceled() {
-        evaluateJavascript("departureCanceled()");
+    public void departureCanceled(PIOTripSegment tripSegment) {
+        String param = getJsonParams(tripSegment);
+        evaluateJavascript("departureCanceled('" + param + "')");
     }
 
     @Override
@@ -242,6 +248,13 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     public void transportationMode(PIOTripSegment tripSegment) {
         String param = getJsonParams(tripSegment);
         evaluateJavascript("transportationMode('" + param + "')");
+    }
+
+    @Override
+    public void detectLargeDistanceTravel(Location location) {
+        if (location != null) {
+            evaluateJavascript("detectLargeDistanceTravel('" + location.toString() + "')");
+        }
     }
 
     private String getJsonParams(PIOTripSegment tripSegment) {
