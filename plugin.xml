@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
         id="cordova-plugin-predict-io"
-        version="3.0.3">
+        version="3.1.0">
 
   <name>PredictIOPlugin</name>
 
@@ -88,7 +88,7 @@
         <source-file src="src/android/PredictIOPlugin.java" target-dir="src/io/predict/plugin/" />
         <source-file src="src/android/PredictIOUtils.java" target-dir="src/io/predict/plugin/" />
         <source-file src="src/android/PredictIOApp.java" target-dir="src/io/predict/plugin/" />
-        <source-file src="src/android/predict-io-3.0.3.jar" target-dir="libs" />
+        <source-file src="src/android/predict-io-3.1.0.jar" target-dir="libs" />
 
         <framework src="com.google.android.gms:play-services-location:9.2.1" />
         <framework src="com.google.android.gms:play-services-base:9.2.1" />
