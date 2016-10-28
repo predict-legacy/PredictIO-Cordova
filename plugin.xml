@@ -87,10 +87,10 @@
 
         <source-file src="src/android/PredictIOPlugin.java" target-dir="src/io/predict/plugin/" />
         <source-file src="src/android/PredictIOUtils.java" target-dir="src/io/predict/plugin/" />
-        <source-file src="src/android/PredictIOApp.java" target-dir="src/io/predict/plugin/" />
+        <source-file src="src/android/PredictIOForegroundService.java" target-dir="src/io/predict/plugin/" />
         <source-file src="src/android/predict-io-3.1.0.jar" target-dir="libs" />
 
-        <framework src="com.google.android.gms:play-services-location:9.2.1" />
-        <framework src="com.google.android.gms:play-services-base:9.2.1" />
+        <framework src="com.google.android.gms:play-services-location:9.4.0" />
+        <framework src="com.google.android.gms:play-services-base:9.4.0" />
     </platform>
 </plugin>
