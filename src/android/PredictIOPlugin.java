@@ -25,12 +25,15 @@ import io.predict.PredictIO;
 import io.predict.PredictIOListener;
 import io.predict.PredictIOStatus;
 
+import static io.predict.plugin.PredictIOForegroundService.NOTIFICATION_CONTENT;
+
 public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener {
     private static final String LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
     private static final int LOCATION_CODE = 1;
     private CallbackContext mCallbackContext;
     private JSONArray mData;
     private boolean isStartForegroundService;
+    private String mNotificationContent;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -146,6 +149,7 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             try {
                 isSearchingInPerimeterEnaled = params.optBoolean(0, false);
                 isStartForegroundService = params.optBoolean(1, false);
+                mNotificationContent = params.optString(2, null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -153,17 +157,15 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
         try {
             PredictIO predictIO = PredictIO.getInstance(getApplicationContext());
             predictIO.enableSearchingInPerimeter(isSearchingInPerimeterEnaled);
-
             if (predictIOValidation(callbackContext, predictIO)) {
                 return;
             }
-
             //noinspection MissingPermission
             predictIO.start(new PredictIO.PIOActivationListener() {
                 @Override
                 public void onActivated() {
                     if (isStartForegroundService) {
-                        startService();
+                        startForegroundService(mNotificationContent);
                     }
                     callbackContext.success();
                 }
@@ -206,17 +208,19 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
         return false;
     }
 
-    private void startService() {
-        getApplicationContext().startService(new Intent(getApplicationContext(), PredictIOForegroundService.class));
+    private void startForegroundService(String notificationContent) {
+        Intent intent = new Intent(getApplicationContext(), PredictIOForegroundService.class);
+        intent.putExtra(NOTIFICATION_CONTENT, notificationContent);
+        getApplicationContext().startService(intent);
     }
 
-    private void stopService() {
+    private void stopForegroundService() {
         getApplicationContext().stopService(new Intent(getApplicationContext(), PredictIOForegroundService.class));
     }
 
     private void stopTracker(CallbackContext callbackContext) {
         try {
-            stopService();
+            stopForegroundService();
             PredictIO.getInstance(getApplicationContext()).stop();
             callbackContext.success();
         } catch (Exception e) {

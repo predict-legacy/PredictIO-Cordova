@@ -7,11 +7,13 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 
 import io.predict.cordova.example.R;
 
 public class PredictIOForegroundService extends Service {
     protected Integer NOTIFICATION_ID = 101;
+    public static final String NOTIFICATION_CONTENT = "NOTIFICATION_CONTENT";
 
     @Nullable
     @Override
@@ -31,7 +33,14 @@ public class PredictIOForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        LoadNotification loadNotification = new LoadNotification("PredictIO", "Active");
+        String notificationContent = "Active";
+        if (intent != null) {
+            String content = intent.getStringExtra(NOTIFICATION_CONTENT);
+            if (!TextUtils.isEmpty(content)) {
+                notificationContent = content;
+            }
+        }
+        LoadNotification loadNotification = new LoadNotification("PredictIO", notificationContent);
         loadNotification.notifyMessage();
         return START_STICKY;
     }
