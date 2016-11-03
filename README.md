@@ -14,6 +14,30 @@ Distinguish car and non-car trips.
 #### Use Cases
 Look through the [Use Cases](https://github.com/predict-io/PredictIO-Cordova/wiki/Use-Cases) where this SDK can be used.
 
+## Remote Notification Support
+predict.io sdk also provides a mechanism which can be used to send remote notifications to the users' devices when a departure or arrival event is detected. To make this happen, the sdk provides the following two methods,
+
+- setCustomParameter
+- setWebhookURL
+
+To send a remote notification to an iOS device, the device token of that device is needed. Once the device token is fetched by using the appropriate iOS APIs, it needs to be sent to predict.io servers. To do this, use setCustomParameter method. The key should be /* device_token */ and the value should be the actual device token.
+```javascript
+cordova.exec( function successCallback() { },
+              function errorCallback(error) { },
+              'PredictIOPlugin',
+              'setCustomParameter',
+              ['device_token', token]);
+```
+The second important part in successfully delivering a remote notification is the server which actually originates the remote notification. In technical terms, this server is called the provider. Whenever a departure or arrival event is detected, predict.io sdk can communicate with the provider using a HTTP callback which should be implemented by the provider. The provider HTTP callback url can be set using the method setWebhookURL.
+```javascript
+cordova.exec( function successCallback() { },
+              function errorCallback(error) { },
+              'PredictIOPlugin',
+              'setWebhookURL',
+              ['https://api.parktag.mobi/demo/notifications/send_notification']);
+```
+So as soon as the departure or arrival event is detected, the predict.io sdk would send the appropriate event to the webhook url along with the device token and then the provider at the webhook url would be able to send remote notification to that specific device about that event.
+
 ## Requirements
 #### iOS
 * [Sign up](http://www.predict.io/sdk-sign-up/) for API key
