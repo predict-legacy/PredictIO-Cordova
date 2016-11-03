@@ -1,10 +1,9 @@
 //
 //  PredictIOPlugin.h
-//  PhoneGapSample
 //
 //  Created by PredictIO on 21/06/2016.
-//
-//
+//  Copyright (c) 2016 predict.io by ParkTAG GmbH. All rights reserved.
+//  SDK Version 3.1.0
 
 #import <Cordova/CDV.h>
 #import "PredictIO.h"
