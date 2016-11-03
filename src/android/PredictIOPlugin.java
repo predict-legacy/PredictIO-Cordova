@@ -1,10 +1,13 @@
 package io.predict.plugin;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
+import android.text.TextUtils;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -18,28 +21,29 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import io.predict.PIOTripSegment;
-import io.predict.PrecisionMode;
 import io.predict.PredictIO;
 import io.predict.PredictIOListener;
 import io.predict.PredictIOStatus;
+
+import static io.predict.plugin.PredictIOForegroundService.NOTIFICATION_CONTENT;
 
 public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener {
     private static final String LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
     private static final int LOCATION_CODE = 1;
     private CallbackContext mCallbackContext;
     private JSONArray mData;
+    private boolean isStartForegroundService;
+    private String mNotificationContent;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         //ParkTAG SDK code
         PredictIO predictIO = PredictIO.getInstance(getApplicationContext());
-        if (predictIO.getListener() == null) {
-            // This notifies sdk that app is initialised
-            predictIO.setAppOnCreate((Application) getApplicationContext());
-            // set this to get event callbacks
-            predictIO.setListener(this);
-        }
+        // This notifies sdk that app is initialised
+        predictIO.setAppOnCreate((Application) getApplicationContext());
+        // set this to get event callbacks
+        predictIO.setListener(this);
     }
 
     @Override
@@ -57,6 +61,9 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             return true;
         } else if ("stop".equals(action)) {
             stopTracker(callbackContext);
+            return true;
+        } else if ("minimize".equals(action)) {
+            minimize();
             return true;
         } else if ("setListener".equals(action)) {
             predictIO.setListener(this);
@@ -87,56 +94,79 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
             boolean isSearchParkingEnable = predictIO.isSearchingInPerimeterEnabled();
             callbackContext.success(String.valueOf(isSearchParkingEnable));
             return true;
-        } else if ("precision".equals(action)) {
-            String precision = predictIO.getPrecision() == PrecisionMode.HIGH ? "HIGH" : "LOW";
-            callbackContext.success(precision);
-            return true;
         } else if ("deviceIdentifier".equals(action)) {
             String deviceIdentifier = predictIO.getDeviceIdentifier();
             callbackContext.success(deviceIdentifier);
+            return true;
+        } else if ("setCustomParameter".equals(action)) {
+            setCustomParameter(data, predictIO);
+            return true;
+        } else if ("setWebhookURL".equals(action)) {
+            setWebhookURL(data, predictIO);
             return true;
         } else {
             return false;
         }
     }
 
+    private void setWebhookURL(JSONArray data, PredictIO predictIO) {
+        if (data != null) {
+            try {
+                String value = data.optString(0, null);
+                if (!TextUtils.isEmpty(value)) {
+                    predictIO.setWebhookURL(value);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void setCustomParameter(JSONArray data, PredictIO predictIO) {
+        if (data != null) {
+            try {
+                String key = data.optString(0, null);
+                String value = data.optString(1, null);
+                if (!TextUtils.isEmpty(key) && !TextUtils.isEmpty(value)) {
+                    predictIO.setCustomParameter(key, value);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void minimize() {
+        Activity activity = cordova.getActivity();
+        if (activity != null) {
+            activity.moveTaskToBack(true);
+        }
+    }
+
     private void startTracker(JSONArray params, final CallbackContext callbackContext) {
-        PrecisionMode precisionMode = PrecisionMode.HIGH;
         boolean isSearchingInPerimeterEnaled = false;
         if (params != null) {
             try {
-                precisionMode = params.optBoolean(0, true) ? PrecisionMode.HIGH : PrecisionMode.LOW;
-                isSearchingInPerimeterEnaled = params.optBoolean(1, false);
+                isSearchingInPerimeterEnaled = params.optBoolean(0, false);
+                isStartForegroundService = params.optBoolean(1, false);
+                mNotificationContent = params.optString(2, null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         try {
             PredictIO predictIO = PredictIO.getInstance(getApplicationContext());
-            predictIO.setPrecision(precisionMode);
             predictIO.enableSearchingInPerimeter(isSearchingInPerimeterEnaled);
-
-            //Validate tracker not already running
-            if (predictIO.getStatus() == PredictIOStatus.ACTIVE) {
-                callbackContext.success();
+            if (predictIOValidation(callbackContext, predictIO)) {
                 return;
             }
-
-            //Validate google play services
-            final GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-            int resultCode = apiAvailability.isGooglePlayServicesAvailable(getApplicationContext());
-            if (resultCode != ConnectionResult.SUCCESS) {
-                if (apiAvailability.isUserResolvableError(resultCode)) {
-                    apiAvailability.getErrorDialog(this.cordova.getActivity(), resultCode, 1000).show();
-                }
-                callbackContext.success();
-                return;
-            }
-
             //noinspection MissingPermission
             predictIO.start(new PredictIO.PIOActivationListener() {
                 @Override
                 public void onActivated() {
+                    if (isStartForegroundService) {
+                        startForegroundService(mNotificationContent);
+                    }
                     callbackContext.success();
                 }
 
@@ -144,10 +174,10 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
                 public void onActivationFailed(int error) {
                     switch (error) {
                         case 401:
-							callbackContext.error("Please verify your API_KEY!");
+                            callbackContext.error("Please verify your API_KEY!");
                             break;
                         case 403:
-							callbackContext.error("Please grant all required permissions");
+                            callbackContext.error("Please grant all required permissions");
                             break;
                     }
                 }
@@ -158,8 +188,39 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
         }
     }
 
+    private boolean predictIOValidation(CallbackContext callbackContext, PredictIO predictIO) {
+        //Validate tracker not already running
+        if (predictIO.getStatus() == PredictIOStatus.ACTIVE) {
+            callbackContext.success();
+            return true;
+        }
+
+        //Validate google play services
+        final GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(getApplicationContext());
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+                apiAvailability.getErrorDialog(this.cordova.getActivity(), resultCode, 1000).show();
+            }
+            callbackContext.success();
+            return true;
+        }
+        return false;
+    }
+
+    private void startForegroundService(String notificationContent) {
+        Intent intent = new Intent(getApplicationContext(), PredictIOForegroundService.class);
+        intent.putExtra(NOTIFICATION_CONTENT, notificationContent);
+        getApplicationContext().startService(intent);
+    }
+
+    private void stopForegroundService() {
+        getApplicationContext().stopService(new Intent(getApplicationContext(), PredictIOForegroundService.class));
+    }
+
     private void stopTracker(CallbackContext callbackContext) {
         try {
+            stopForegroundService();
             PredictIO.getInstance(getApplicationContext()).stop();
             callbackContext.success();
         } catch (Exception e) {
@@ -181,7 +242,7 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     @Override
     public void searchingInPerimeter(Location location) {
         if (location != null) {
-            evaluateJavascript("searchingInPerimeter('" + location.toString() + "')");
+            evaluateJavascript("searchingInPerimeter('" + getJsonParams(location) + "')");
         }
     }
 
@@ -198,14 +259,15 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     }
 
     @Override
-    public void departureCanceled() {
-        evaluateJavascript("departureCanceled()");
+    public void departureCanceled(PIOTripSegment tripSegment) {
+        String param = getJsonParams(tripSegment);
+        evaluateJavascript("departureCanceled('" + param + "')");
     }
 
     @Override
     public void didUpdateLocation(Location location) {
         if (location != null) {
-            evaluateJavascript("didUpdateLocation('" + location.toString() + "')");
+            evaluateJavascript("didUpdateLocation('" + getJsonParams(location) + "')");
         }
     }
 
@@ -213,6 +275,19 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
     public void transportationMode(PIOTripSegment tripSegment) {
         String param = getJsonParams(tripSegment);
         evaluateJavascript("transportationMode('" + param + "')");
+    }
+
+    private String getJsonParams(Location location) {
+        JSONObject jsonParam = new JSONObject();
+        try {
+            if (location != null) {
+                jsonParam.put("latitude", location.getLatitude());
+                jsonParam.put("longitude", location.getLongitude());
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonParam.toString();
     }
 
     private String getJsonParams(PIOTripSegment tripSegment) {
