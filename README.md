@@ -23,7 +23,7 @@ Look through the [Use Cases](https://github.com/predict-io/PredictIO-Cordova/wik
 #### Android
 * [Sign up](http://www.predict.io/sdk-sign-up/) for API key
 * Android 2.3.3 (API 10) or above
-* Google Play services 9.2.1
+* Google Play services 9.4.0
 
 ## Installation
 #### iOS Integration Guide
