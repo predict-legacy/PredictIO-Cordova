@@ -1,10 +1,9 @@
 //
 //  PredictIOPlugin.h
-//  PhoneGapSample
 //
 //  Created by PredictIO on 21/06/2016.
-//
-//
+//  Copyright (c) 2016 predict.io by ParkTAG GmbH. All rights reserved.
+//  SDK Version 3.1.0
 
 #import <Cordova/CDV.h>
 #import "PredictIO.h"
@@ -42,5 +41,19 @@
  * An alphanumeric string that uniquely identifies a device to the predict.io
  **/
 - (void)deviceIdentifier:(CDVInvokedUrlCommand*)command;
+
+/*
+ * Set custom parameters which can then be sent to a user defined webhook url
+ * @param key:   Key to identify a custom parameter value
+ * @param value: Custom parameter value
+ */
+- (void)setCustomParameter:(CDVInvokedUrlCommand*)command;
+
+/*
+ * Set a webhook url where all the detected events can then be forwarded along with the custom parameters.
+ * This webhook will not support additional authentication. So any additional validation of legitimate requests must take place.
+ * @param url: The webhook url
+ */
+- (void)setWebhookURL:(CDVInvokedUrlCommand*)command;
 
 @end

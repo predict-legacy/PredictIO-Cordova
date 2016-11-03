@@ -1,10 +1,9 @@
 //
 //  PredictIOPlugin.m
-//  PhoneGapSample
 //
 //  Created by PredictIO on 14/02/2015.
-//
-//
+//  Copyright (c) 2016 predict.io by ParkTAG GmbH. All rights reserved.
+//  SDK Version 3.1.0
 
 #import "PredictIOPlugin.h"
 #import "PredictIO.h"
@@ -78,6 +77,33 @@
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
+- (void)setCustomParameter:(CDVInvokedUrlCommand*)command {
+    if ([self isValidStringArguments:command.arguments numOfArgs:2]) {
+        NSString *key = command.arguments[0];
+        NSString *value = command.arguments[1];
+        [[PredictIO sharedInstance] setCustomParameter:key andValue:value];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    } else {
+        NSString *errorMsg = [self errorMessageInValidCustomParameterArguments:command.arguments];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+}
+
+- (void)setWebhookURL:(CDVInvokedUrlCommand*)command {
+    if ([self isValidStringArguments:command.arguments numOfArgs:1]) {
+        NSString *webhookUrl = command.arguments[0];
+        [[PredictIO sharedInstance] setWebhookURL:webhookUrl];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    } else {
+        NSString *errorMsg = [self errorMessageInValidWebhookArguments:command.arguments];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorMsg];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+}
+
 #pragma mark - PredictIODelegate Methods
 
 /* This method is invoked when predict.io detects that the user is about to depart
@@ -123,10 +149,23 @@
 /* This method is invoked when predict.io is unable to validate the last departure event.
  * This can be due to invalid data received from sensors or the trip amplitude.
  * i.e. If the trip takes less than 5 minutes or the distance travelled is less than 3km
+ * @param departureLocation: The Location from where the user departed
+ * @param departureTime: Start time of the trip
+ * @param transportMode: Mode of transport
+ * @param UUID: Trip segment UUID
  */
-- (void)departureCanceled
+- (void)departureCanceled:(PIOTripSegment *)tripSegment
 {
-    [self evaluateJSMethod:@"departureCanceled" params:nil];
+    NSMutableDictionary *departureCanceledData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                                  @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
+                                                  @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
+                                                  @([tripSegment.departureTime timeIntervalSince1970]), @"departureTime",
+                                                  [self transportMode:tripSegment.transportationMode], @"transportationMode",
+                                                  tripSegment.UUID, @"UUID",
+                                                  nil];
+
+    NSString *params = [self jsonSerializeDictionary:departureCanceledData];
+    [self evaluateJSMethod:@"departureCanceled" params:params];
 }
 
 /* This method is invoked when predict.io detects transportation mode
@@ -267,6 +306,42 @@
     }
 
     [self.commandDelegate evalJs:jsStatement];
+}
+
+- (BOOL)isValidStringArguments:(NSArray *)arguments numOfArgs:(NSUInteger)numOfArgs {
+    if (arguments == nil || arguments.count != numOfArgs) {
+        return NO;
+    } else {
+        for (int index = 0; index<numOfArgs; index++) {
+            if (![arguments[index] isKindOfClass:[NSString class]]) {
+                return NO;
+            }
+        }
+    }
+    return YES;
+}
+
+- (NSString *)errorMessageInValidCustomParameterArguments:(NSArray *)arguments {
+    if (arguments == nil || arguments.count != 2) {
+        return @"Expecting two parameters, a key and a value";
+    } else {
+        if (![arguments[0] isKindOfClass:[NSString class]] ||
+            ![arguments[1] isKindOfClass:[NSString class]]) {
+            return @"Arguments can only be of string type";
+        }
+    }
+    return nil;
+}
+
+- (NSString *)errorMessageInValidWebhookArguments:(NSArray *)arguments {
+    if (arguments == nil || arguments.count != 1) {
+        return @"Expecting one parameter, a webhook url string";
+    } else {
+        if (![arguments[0] isKindOfClass:[NSString class]]) {
+            return @"Argument can only be of string type";
+        }
+    }
+    return nil;
 }
 
 @end
