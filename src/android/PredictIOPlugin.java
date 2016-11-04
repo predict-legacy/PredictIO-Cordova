@@ -24,6 +24,7 @@ import io.predict.PIOTripSegment;
 import io.predict.PredictIO;
 import io.predict.PredictIOListener;
 import io.predict.PredictIOStatus;
+import io.predict.TransportationMode;
 
 import static io.predict.plugin.PredictIOForegroundService.NOTIFICATION_CONTENT;
 
@@ -309,7 +310,15 @@ public class PredictIOPlugin extends CordovaPlugin implements PredictIOListener 
                 jsonParam.put("arrivalLongitude", tripSegment.arrivalLocation.getLongitude());
             }
             if (tripSegment.transportationMode != null) {
-                jsonParam.put("transportationMode", tripSegment.transportationMode.name());
+                String transportationMode = "Undetermined";
+                if (TransportationMode.CAR == tripSegment.transportationMode) {
+                    transportationMode = "Car";
+                } else if (TransportationMode.NON_CAR == tripSegment.transportationMode) {
+                    transportationMode = "NonCar";
+                } else if (TransportationMode.BICYCLE == tripSegment.transportationMode) {
+                    transportationMode = "Bicycle";
+                }
+                jsonParam.put("transportationMode", transportationMode);
             }
         } catch (JSONException e) {
             e.printStackTrace();
