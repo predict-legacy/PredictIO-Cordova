@@ -1,9 +1,10 @@
 //
 //  PredictIOPlugin.h
+//  PhoneGapSample
 //
 //  Created by PredictIO on 21/06/2016.
-//  Copyright (c) 2016 predict.io by ParkTAG GmbH. All rights reserved.
-//  SDK Version 3.1.0
+//
+//
 
 #import <Cordova/CDV.h>
 #import "PredictIO.h"
@@ -55,5 +56,20 @@
  * @param url: The webhook url
  */
 - (void)setWebhookURL:(CDVInvokedUrlCommand*)command;
+
+/*
+ * Clear historic zone data which is used to predict different zones like home or work zones
+ */
+- (void)clearZoneHistory:(CDVInvokedUrlCommand*)command;
+
+/*
+ * Home zone of the user detected by PredicIO
+ */
+- (void)homeZone:(CDVInvokedUrlCommand*)command;
+
+/*
+ * Work zone of the user detected by PredicIO
+ */
+- (void)workZone:(CDVInvokedUrlCommand*)command;
 
 @end

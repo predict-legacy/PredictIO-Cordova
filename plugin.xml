@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
         id="cordova-plugin-predict-io"
-        version="3.1.0">
+		version="3.2.0">
 
   <name>PredictIOPlugin</name>
 
@@ -17,9 +17,10 @@
 		</config-file>
 
 		<header-file src="src/ios/PredictIO.h" />
-    <header-file src="src/ios/PIOTripSegment.h" />
-		<header-file src="src/ios/PredictIOPlugin.h" />
-		<source-file src="src/ios/PredictIOPlugin.m" />
+        <header-file src="src/ios/PIOTripSegment.h" />
+        <header-file src="src/ios/PredictIOPlugin.h" />
+        <header-file src="src/ios/PIOZone.h" />
+        <source-file src="src/ios/PredictIOPlugin.m" />
 		<source-file src="src/ios/libPredictIOSDK.a" framework="true" />
 
 		<framework src="CoreTelephony.framework" />
@@ -86,10 +87,11 @@
         </config-file>
 
         <source-file src="src/android/PredictIOPlugin.java" target-dir="src/io/predict/plugin/" />
+        <source-file src="src/android/predict-io-3.2.0.jar" target-dir="libs" />
         <source-file src="src/android/PredictIOForegroundService.java" target-dir="src/io/predict/plugin/" />
-        <source-file src="src/android/predict-io-3.1.0.jar" target-dir="libs" />
 
         <framework src="com.google.android.gms:play-services-location:9.4.0" />
         <framework src="com.google.android.gms:play-services-base:9.4.0" />
+        <framework src="com.google.android.gms:play-services-maps:9.4.0" />
     </platform>
 </plugin>
