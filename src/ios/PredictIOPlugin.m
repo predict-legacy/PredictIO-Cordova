@@ -1,13 +1,26 @@
 //
 //  PredictIOPlugin.m
+//  PhoneGapSample
 //
 //  Created by PredictIO on 14/02/2015.
-//  Copyright (c) 2016 predict.io by ParkTAG GmbH. All rights reserved.
-//  SDK Version 3.1.0
+//
+//
 
 #import "PredictIOPlugin.h"
 #import "PredictIO.h"
 #import "PIOTripSegment.h"
+
+static NSString *const PIOZoneCenterLatitudeKey = @"zoneCenterLatitude";
+static NSString *const PIOZoneCenterLongitudeKey = @"zoneCenterLongitude";
+static NSString *const PIOZoneRadiusKey = @"zoneRadius";
+static NSString *const PIOZoneTypeKey = @"zoneType";
+
+@interface PredictIOPlugin ()
+
+@property (strong, nonatomic) NSArray *tripSegmentKeys;
+@property (strong, nonatomic) NSArray *zoneKeys;
+
+@end
 
 @implementation PredictIOPlugin
 
@@ -104,6 +117,36 @@
     }
 }
 
+- (void)clearZoneHistory:(CDVInvokedUrlCommand*)command {
+    [[PredictIO sharedInstance] clearZoneHistory];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)homeZone:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult* pluginResult;
+    PIOZone *homeZone = [PredictIO sharedInstance].homeZone;
+    if (homeZone == nil) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    } else {
+        NSString *json = (NSString *)[self jsonFromZone:homeZone];
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:json];
+    }
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+- (void)workZone:(CDVInvokedUrlCommand*)command {
+    CDVPluginResult* pluginResult;
+    PIOZone *workZone = [PredictIO sharedInstance].workZone;
+    if (workZone == nil) {
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_NO_RESULT];
+    } else {
+        NSString *json = (NSString *)[self jsonFromZone:workZone];
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:json];
+    }
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 #pragma mark - PredictIODelegate Methods
 
 /* This method is invoked when predict.io detects that the user is about to depart
@@ -114,14 +157,7 @@
  */
 - (void)departing:(PIOTripSegment *)tripSegment
 {
-    NSMutableDictionary *departingData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                          @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
-                                          @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
-                                          [self transportMode:tripSegment.transportationMode], @"transportationMode",
-                                          tripSegment.UUID, @"UUID",
-                                          nil];
-
-    NSString *params = [self jsonSerializeDictionary:departingData];
+    NSString *params = [self jsonFromTripSegment:tripSegment];
     [self evaluateJSMethod:@"departing" params:params];
 }
 
@@ -134,15 +170,7 @@
  */
 - (void)departed:(PIOTripSegment *)tripSegment
 {
-    NSMutableDictionary *departedData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                        @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
-                                        @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
-                                        @([tripSegment.departureTime timeIntervalSince1970]), @"departureTime",
-                                        [self transportMode:tripSegment.transportationMode], @"transportationMode",
-                                        tripSegment.UUID, @"UUID",
-                                        nil];
-
-    NSString *params = [self jsonSerializeDictionary:departedData];
+    NSString *params = [self jsonFromTripSegment:tripSegment];
     [self evaluateJSMethod:@"departed" params:params];
 }
 
@@ -154,33 +182,20 @@
  * @param transportMode: Mode of transport
  * @param UUID: Trip segment UUID
  */
-- (void)departureCanceled:(PIOTripSegment *)tripSegment
+- (void)canceledDeparture:(PIOTripSegment *)tripSegment
 {
-    NSMutableDictionary *departureCanceledData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                                  @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
-                                                  @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
-                                                  @([tripSegment.departureTime timeIntervalSince1970]), @"departureTime",
-                                                  [self transportMode:tripSegment.transportationMode], @"transportationMode",
-                                                  tripSegment.UUID, @"UUID",
-                                                  nil];
-
-    NSString *params = [self jsonSerializeDictionary:departureCanceledData];
-    [self evaluateJSMethod:@"departureCanceled" params:params];
+    NSString *params = [self jsonFromTripSegment:tripSegment];
+    [self evaluateJSMethod:@"canceledDeparture" params:params];
 }
 
 /* This method is invoked when predict.io detects transportation mode
  * @param: transportationMode: Mode of transportation
  * @param UUID: Trip segment UUID
  */
-- (void)transportationMode:(PIOTripSegment *)tripSegment
+- (void)detectedTransportationMode:(PIOTripSegment *)tripSegment
 {
-    NSMutableDictionary *departedData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                         [self transportMode:tripSegment.transportationMode], @"transportationMode",
-                                         tripSegment.UUID, @"UUID",
-                                         nil];
-
-    NSString *params = [self jsonSerializeDictionary:departedData];
-    [self evaluateJSMethod:@"transportationMode" params:params];
+    NSString *params = [self jsonFromTripSegment:tripSegment];
+    [self evaluateJSMethod:@"detectedTransportationMode" params:params];
 }
 
 /* This method is invoked when predict.io suspects that the user has just arrived
@@ -194,21 +209,10 @@
  * @param transportMode: Mode of transport
  * @param UUID: Trip segment UUID
  */
-- (void)arrivalSuspected:(PIOTripSegment *)tripSegment
+- (void)suspectedArrival:(PIOTripSegment *)tripSegment
 {
-  NSMutableDictionary *arrivalSuspectedData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                            @(tripSegment.arrivalLocation.coordinate.latitude), @"arrivalLatitude",
-                                            @(tripSegment.arrivalLocation.coordinate.longitude), @"arrivalLongitude",
-                                            @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
-                                            @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
-                                            @([tripSegment.departureTime timeIntervalSince1970]), @"departureTime",
-                                            @([tripSegment.arrivalTime timeIntervalSince1970]), @"arrivalTime",
-                                            [self transportMode:tripSegment.transportationMode], @"transportationMode",
-                                            tripSegment.UUID, @"UUID",
-                                            nil];
-
-  NSString *params = [self jsonSerializeDictionary:arrivalSuspectedData];
-  [self evaluateJSMethod:@"arrivalSuspected" params:params];
+    NSString *params = [self jsonFromTripSegment:tripSegment];
+    [self evaluateJSMethod:@"suspectedArrival" params:params];
 }
 
 /* This method is invoked when predict.io detects that the user has just arrived at destination
@@ -221,18 +225,7 @@
  */
 - (void)arrived:(PIOTripSegment *)tripSegment
 {
-    NSMutableDictionary *arrivedAtData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                        @(tripSegment.arrivalLocation.coordinate.latitude), @"arrivalLatitude",
-                                        @(tripSegment.arrivalLocation.coordinate.longitude), @"arrivalLongitude",
-                                        @(tripSegment.departureLocation.coordinate.latitude), @"departureLatitude",
-                                        @(tripSegment.departureLocation.coordinate.longitude), @"departureLongitude",
-                                        @([tripSegment.departureTime timeIntervalSince1970]), @"departureTime",
-                                        @([tripSegment.arrivalTime timeIntervalSince1970]), @"arrivalTime",
-                                        [self transportMode:tripSegment.transportationMode], @"transportationMode",
-                                        tripSegment.UUID, @"UUID",
-                                        nil];
-
-    NSString *params = [self jsonSerializeDictionary:arrivedAtData];
+    NSString *params = [self jsonFromTripSegment:tripSegment];
     [self evaluateJSMethod:@"arrived" params:params];
 }
 
@@ -251,6 +244,42 @@
     [self evaluateJSMethod:@"searchingInPerimeter" params:params];
 }
 
+/* This method is invoked after few minutes of arriving at the destination and detects if the user is stationary or not
+ * @param tripSegment: PIOTripSegment contains details about stationary after arrival
+ * @discussion: The following properties are populated currently:
+ *  UUID: Unique ID for a trip segment, e.g. to link departure and arrival events
+ *  departureLocation: The Location from where the user departed
+ *  arrivalLocation: The Location where the user arrived and ended the trip
+ *  departureTime: Time of departure
+ *  arrivalTime: Time of arrival
+ *  transportationMode: Mode of transportation
+ *  departureZone: Departure zone
+ *  arrivalZone: Arrival Zone
+ *  stationary: User activity status as stationary or not
+ */
+- (void)beingStationaryAfterArrival:(PIOTripSegment *)tripSegment
+{
+    NSString *params = [self jsonFromTripSegment:tripSegment];
+    [self evaluateJSMethod:@"beingStationaryAfterArrival" params:params];
+}
+
+/* This method is invoked when predict.io detects that the user has traveled by air plane and
+ * just arrived at destination, this event is independent of usual vehicle trip detection and
+ * will not have predecessor departed event
+ * @param tripSegment: PIOTripSegment contains details about traveled by air plane event
+ * @discussion: The following properties are populated currently
+ *  UUID: Unique ID for a trip segment
+ *  departureLocation: The Location from where the user started journey
+ *  arrivalLocation: The Location where the user arrived and ended the journey
+ *  departureTime: Start time of journey
+ *  arrivalTime: Stop time of journey
+ */
+- (void)traveledByAirplane:(PIOTripSegment *)tripSegment
+{
+    NSString *params = [self jsonFromTripSegment:tripSegment];
+    [self evaluateJSMethod:@"traveledByAirplane" params:params];
+}
+
 /* This is invoked when new location information is received from location services
  * Implemented this method if you need raw GPS data, instead of creating new location manager
  * Since, it is not recommended to use multiple location managers in a single app
@@ -267,7 +296,7 @@
     [self evaluateJSMethod:@"didUpdateLocation" params:params];
 }
 
-#pragma mark - Helper Methods
+#pragma mark - TripSegment To JSON Conversion Methods
 
 - (NSString *)transportMode:(TransportationMode)transportMode {
     if (transportMode == TransportationModeUndetermined) {
@@ -278,6 +307,97 @@
       return @"NonCar";
     }
 }
+
+- (NSString *)zoneType:(PIOZoneType)zoneType {
+    NSString *zone;
+    switch (zoneType) {
+        case PIOZoneTypeHome:
+            zone = @"Home";
+            break;
+        case PIOZoneTypeWork:
+            zone = @"Work";
+
+        default:
+            zone = @"Other";
+            break;
+    }
+    return zone;
+}
+
+- (NSArray *)tripSegmentKeys {
+    if (_tripSegmentKeys == nil) {
+        return @[@"arrivalLatitude", @"arrivalLongitude", @"departureLatitude", @"departureLongitude",
+                 @"departureTime", @"arrivalTime", @"transportationMode", @"UUID", @"departureZone",
+                 @"arrivalZone", @"stationaryAfterArrival"];
+    }
+    return _tripSegmentKeys;
+}
+
+- (NSArray *)valuesOfTripSegment:(PIOTripSegment *)tripSegment {
+    NSObject *arrivalLatitude = [self checkObject:tripSegment.arrivalLocation
+                                        withDoubleValue:tripSegment.arrivalLocation.coordinate.latitude];
+    NSObject *arrivalLongitude = [self checkObject:tripSegment.arrivalLocation
+                                         withDoubleValue:tripSegment.arrivalLocation.coordinate.longitude];
+    NSObject *departureLatitude = [self checkObject:tripSegment.departureLocation
+                                          withDoubleValue:tripSegment.departureLocation.coordinate.latitude];
+    NSObject *departureLongitude = [self checkObject:tripSegment.departureLocation
+                                           withDoubleValue:tripSegment.departureLocation.coordinate.longitude];
+    NSObject *departureTime = [self checkObject:tripSegment.departureTime
+                                      withDoubleValue:[tripSegment.departureTime timeIntervalSince1970]];
+    NSObject *arrivalTime = [self checkObject:tripSegment.arrivalTime
+                                    withDoubleValue:[tripSegment.arrivalTime timeIntervalSince1970]];
+    NSObject *departureZone = [self checkObject:tripSegment.departureZone
+                                withObjectValue:[self dictionaryFromZone:tripSegment.departureZone]];
+    NSObject *arrivalZone = [self checkObject:tripSegment.arrivalZone
+                              withObjectValue:[self dictionaryFromZone:tripSegment.arrivalZone]];
+    return @[arrivalLatitude, arrivalLongitude, departureLatitude, departureLongitude, departureTime,
+             arrivalTime, [self transportMode:tripSegment.transportationMode], tripSegment.UUID,
+             departureZone, arrivalZone, @(tripSegment.stationaryAfterArrival)];
+}
+
+- (NSDictionary *)dictionaryFromTripSegment:(PIOTripSegment *)tripSegment {
+    NSDictionary *tripSegmentDic = [[NSDictionary alloc] initWithObjects:[self valuesOfTripSegment:tripSegment]
+                                                                 forKeys:self.tripSegmentKeys];
+    return tripSegmentDic;
+}
+
+- (NSString *)jsonFromTripSegment:(PIOTripSegment *)tripSegment {
+    NSDictionary *tripSegmentDictionary = [self dictionaryFromTripSegment:tripSegment];
+    NSString *params = [self jsonSerializeDictionary:tripSegmentDictionary];
+    return params;
+}
+
+#pragma mark - PIOZone to JSON Conversion Methods
+
+- (NSArray *)zoneKeys {
+    if (_zoneKeys == nil) {
+        _zoneKeys = @[PIOZoneCenterLatitudeKey, PIOZoneCenterLongitudeKey, PIOZoneRadiusKey,
+                         PIOZoneTypeKey];
+    }
+    return _zoneKeys;
+}
+
+- (NSArray *)valuesOfZone:(PIOZone *)zone {
+    NSObject *zoneCenterLatitude = [self checkObject:zone withDoubleValue:zone.center.latitude];
+    NSObject *zoneCenterLongitude = [self checkObject:zone withDoubleValue:zone.center.longitude];
+    NSObject *zoneRadius = [self checkObject:zone withDoubleValue:zone.radius];
+    NSObject *zoneType = [self checkObject:zone withObjectValue:[self zoneType:zone.zoneType]];
+    return @[zoneCenterLatitude, zoneCenterLongitude, zoneRadius, zoneType];
+}
+
+- (NSDictionary *)dictionaryFromZone:(PIOZone *)zone {
+    NSDictionary *zoneDic = [[NSDictionary alloc] initWithObjects:[self valuesOfZone:zone]
+                                                          forKeys:self.zoneKeys];
+    return zoneDic;
+}
+
+- (NSString *)jsonFromZone:(PIOZone *)zone {
+    NSDictionary *zoneDictionary = [self dictionaryFromZone:zone];
+    NSString *params = [self jsonSerializeDictionary:zoneDictionary];
+    return params;
+}
+
+#pragma mark - JSON to JavaScript
 
 - (NSString *)jsonSerializeDictionary:(NSDictionary *)dictionary
 {
@@ -307,6 +427,8 @@
 
     [self.commandDelegate evalJs:jsStatement];
 }
+
+#pragma mark - Validation Methods
 
 - (BOOL)isValidStringArguments:(NSArray *)arguments numOfArgs:(NSUInteger)numOfArgs {
     if (arguments == nil || arguments.count != numOfArgs) {
@@ -342,6 +464,14 @@
         }
     }
     return nil;
+}
+
+- (NSObject *)checkObject:(NSObject *)object withDoubleValue:(double)value {
+    return (object == nil ? [NSNull null] : @(value));
+}
+
+- (NSObject *)checkObject:(NSObject *)object withObjectValue:(NSObject *)value {
+    return (object == nil ? [NSNull null] : value);
 }
 
 @end
