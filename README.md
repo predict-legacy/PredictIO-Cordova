@@ -2,17 +2,27 @@
 predict.io offers mobile developers a battery-optimized SDK to get normalised sensor results. Available for Cordova as iOS and Android plugins. It gives you real-time updates when a user starts or ends a journey. With this trigger come contextual details for the mode of transportation (car vs. non-car).
 
 ## Features
-#### Arrival
-Detects that a user just arrived at the destination.
 
-#### Departure
-Detects that user just started their journey.
+##### Departure Detection
+Detects when a user is starting a trip.
 
-#### Transport Mode
-Distinguish car and non-car trips.
+##### Arrival Detection
+Detects that a user just arrived at a destination.
+
+##### Transport Mode
+Detects a transportation mode (car vs. non-car).
+
+##### Home & Work Zone Detection
+Detects the frequently visited areas of your users.
+
+##### Flight Trip Detection
+Detects when a user arrives after air travel.
+
+##### Backend Integration
+Send all detected events to your own backend using webhooks.
 
 #### Use Cases
-Look through the [Use Cases](https://github.com/predict-io/PredictIO-Cordova/wiki/Use-Cases) where this SDK can be used.
+Look through the [Use Cases](https://www.predict.io/use-cases/) where this SDK can be used.
 
 ## Remote Notification Support
 predict.io sdk also provides a mechanism which can be used to send remote notifications to the users' devices when a departure or arrival event is detected. To make this happen, the sdk provides the following two methods,
