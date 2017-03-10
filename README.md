@@ -50,12 +50,12 @@ So as soon as the departure or arrival event is detected, the predict.io sdk wou
 
 ## Requirements
 #### iOS
-* [Sign up](http://www.predict.io/sdk-sign-up/) for API key
+* [Sign up](http://www.predict.io/service/registration/?level=1) for API key
 * iOS 7.0+
 * ARC
 
 #### Android
-* [Sign up](http://www.predict.io/sdk-sign-up/) for API key
+* [Sign up](http://www.predict.io/service/registration/?level=1) for API key
 * Android 2.3.3 (API 10) or above
 * Google Play services 9.4.0
 
